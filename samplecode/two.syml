@@ -1,0 +1,63 @@
+// From my obsidian page haha
+import listutils as lu
+import strutils as su
+import stdio
+
+function fibonnaci_series(nterms: int) -> list[int]:
+	var fibs = []  // Types are auto-detected and inferred based on usage - ref.: Lobster
+	var a = 0, b = 1  // Maybe the real "best language" was the JavaScript we met along the way
+	
+	for i = listutils.range():
+		var sum = a + b
+		fibs.append(sum)
+		b = a
+		a = sum
+
+function main(args: list) -> int:
+	stdio.print(fibonnaci_series(10))
+	return 0  // No Rusty implicit returning of last statement.
+
+struct User:
+	... // assume some types
+
+struct UserDB:
+	// In structs, syntax is a little different
+	// you probably want to specify types here yourself
+	users: lu.list[User]
+	usercount: int
+
+struct Person:
+	age: int
+	name: su.string
+
+// Hmmm, how do we do methods. Or interfaces. Or anything?
+struct Student: // a fan favorite (nobody cares)
+	person: Person
+	grade: int
+
+// in some function:
+var s = Student(
+	Person(age=10, name="johnny"),
+	grade=5
+) // optional named arguments...? not sure.
+
+stdio.print(s.person.name) // hm... composition over inheritance.........
+
+
+///--- Or what about associative arrays... in an ECS style?
+struct Person:
+	age: int
+	name: su.string
+
+struct Student:
+	grade: int
+
+var people = [] // oh wait that needs arrays to make sense.
+people.append(Person(1, "a"))
+
+var students = [null for person in people] // need to figure out null related stuff. take notes from C#  ?
+students[0] = Student(199)
+
+struct Vector2<T>:
+	x: T
+	y: T
