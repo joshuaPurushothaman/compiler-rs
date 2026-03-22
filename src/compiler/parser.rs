@@ -15,10 +15,6 @@ pub fn parser<'src>() -> impl Parser<'src, &'src str, Expr<'src>> {
             .map(|s: &str| Expr::Num(s.parse().unwrap()))
             .padded();
 
-        // let atom = int
-        //     .or(expr.delimited_by(just('('), just(')')))
-        //     .or(ident.map(Expr::Var))
-        //     .padded();
         let atom = choice((
             int,
             expr.delimited_by(just('('), just(')')),
