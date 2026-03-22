@@ -2,18 +2,29 @@ use crate::compiler::ast::Expr;
 
 use chumsky::Parser;
 use chumsky::{
-    // input::{Input as _, MappedInput},
     // pratt::*,
     prelude::*,
 };
 
+#[allow(clippy::let_and_return)] // for some names + future expansion lol
 pub fn parser<'src>() -> impl Parser<'src, &'src str, Expr<'src>> {
-    recursive(|expr| {
+    let ident = text::ascii::ident().padded();
+
+    let expr = recursive(|expr| {
         let int = text::int(10)
             .map(|s: &str| Expr::Num(s.parse().unwrap()))
             .padded();
 
-        let atom = int.or(expr.delimited_by(just('('), just(')'))).padded();
+        // let atom = int
+        //     .or(expr.delimited_by(just('('), just(')')))
+        //     .or(ident.map(Expr::Var))
+        //     .padded();
+        let atom = choice((
+            int,
+            expr.delimited_by(just('('), just(')')),
+            ident.map(Expr::Var),
+        ))
+        .padded();
 
         let op = |c| just(c).padded();
 
@@ -42,5 +53,16 @@ pub fn parser<'src>() -> impl Parser<'src, &'src str, Expr<'src>> {
         );
 
         sum
-    })
+    });
+
+    let decl = text::ascii::keyword("let")
+        .ignore_then(ident)
+        .then_ignore(just('='))
+        .then(expr.clone())
+        .map(|(name, rhs)| Expr::Let {
+            name,
+            rhs: Box::new(rhs),
+        });
+
+    choice((decl, expr)).padded()
 }

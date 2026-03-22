@@ -1,6 +1,10 @@
 mod compiler;
-use compiler::{eval::eval, parser::parser};
+use compiler::{
+    eval::{Variable, eval},
+    parser::parser,
+};
 
+use std::vec;
 #[allow(unused_imports)]
 use std::{
     env, fmt, fs,
@@ -20,9 +24,19 @@ fn main() {
     print!(">>> ");
     std::io::stdout().flush().unwrap();
 
+    // let mut vars = vec![("x".to_string(), 3.0), ("sixseven".to_string(), 67.0)];
+    let mut vars = vec![
+        Variable::new("x".to_string(), 3.0),
+        Variable::new("sixseven".to_string(), 67.0),
+    ];
+
     iter_lines_from_stdin()
-        .map(process_line) // To take in a file, just cat src.syml | cargo run
+        .map(|line| process_line(line, &mut vars)) // To take in a file, just cat src.syml | cargo run
         .for_each(drop) // see justfile for more
+
+    // let mut input_line = String::new();
+    // io::stdin().read_line(&mut input_line).expect("erm couldn't read line from stdin");
+    // process_line(input_line, &mut vars);
 }
 
 fn iter_lines_from_stdin() -> impl Iterator<Item = String> {
@@ -34,7 +48,7 @@ fn iter_lines_from_stdin() -> impl Iterator<Item = String> {
     lock.lines().map(|l| l.unwrap())
 }
 
-fn process_line(line: String) {
+fn process_line(line: String, vars: &mut Vec<Variable>) {
     // Early-stage eval levels:
     // 1. Just print out the list of tokens
     // 2. Also print out the AST
@@ -61,7 +75,7 @@ fn process_line(line: String) {
         Ok(ast) => {
             print_info!("Parses to:\n", ast, YELLOW, WHITE);
 
-            match eval(&ast) {
+            match eval(&ast, vars) {
                 Ok(output) => print_info!("Evaluates to: ", output, BLUE, GREEN),
                 Err(eval_err) => print_info!("Evaluation error:\n", eval_err, YELLOW, RED),
             }

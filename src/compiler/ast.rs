@@ -14,7 +14,6 @@ pub enum Expr<'src> {
     Let {
         name: &'src str,
         rhs: Box<Expr<'src>>,
-        then: Box<Expr<'src>>,
     },
     Fn {
         name: &'src str,
