@@ -18,6 +18,5 @@ pub enum Expr<'src> {
         name: &'src str,
         args: Vec<&'src str>,
         body: Box<Expr<'src>>,
-        then: Box<Expr<'src>>,
     },
 }

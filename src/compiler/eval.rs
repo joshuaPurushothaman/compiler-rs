@@ -43,6 +43,7 @@ pub fn eval<'src>(expr: &'src Expr<'src>, vars: &mut Vec<Variable>) -> Result<f6
         //     body,
         //     then,
         // } => todo!(),
-        _ => todo!()
+        // _ => todo!()
+        _ => Ok(200.0) // mf http code
     }
 }

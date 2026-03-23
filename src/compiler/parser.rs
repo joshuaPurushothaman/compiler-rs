@@ -60,5 +60,18 @@ pub fn parser<'src>() -> impl Parser<'src, &'src str, Expr<'src>> {
             rhs: Box::new(rhs),
         });
 
-    choice((decl, expr)).padded()
+    let function = text::ascii::keyword("fn")
+        .ignore_then(ident)
+        .then(ident.repeated().collect::<Vec<_>>())
+        .then_ignore(just('='))
+        .then(expr.clone())
+        .map(|((name, args), body)| Expr::Fn {
+            name,
+            args,
+            body: Box::new(body),
+        });
+
+    let valid_toplevels = choice((function, decl, expr));
+
+    valid_toplevels.padded()
 }
