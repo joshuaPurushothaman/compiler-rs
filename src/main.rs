@@ -5,12 +5,7 @@ use compiler::{
 };
 
 use std::vec;
-#[allow(unused_imports)]
-use std::{
-    env, fmt, fs,
-    io::{self, BufRead, Read, Write},
-    path::PathBuf,
-};
+use std::io::{self, BufRead, Write};
 
 use chumsky::Parser;
 
@@ -24,7 +19,6 @@ fn main() {
     print!(">>> ");
     std::io::stdout().flush().unwrap();
 
-    // let mut vars = vec![("x".to_string(), 3.0), ("sixseven".to_string(), 67.0)];
     let mut vars = vec![
         Variable::new("x".to_string(), 3.0),
         Variable::new("sixseven".to_string(), 67.0),
@@ -33,10 +27,6 @@ fn main() {
     iter_lines_from_stdin()
         .map(|line| process_line(line, &mut vars)) // To take in a file, just cat src.syml | cargo run
         .for_each(drop) // see justfile for more
-
-    // let mut input_line = String::new();
-    // io::stdin().read_line(&mut input_line).expect("erm couldn't read line from stdin");
-    // process_line(input_line, &mut vars);
 }
 
 fn iter_lines_from_stdin() -> impl Iterator<Item = String> {
@@ -44,17 +34,10 @@ fn iter_lines_from_stdin() -> impl Iterator<Item = String> {
     let lock = stdin.lock();
 
     // Panic if any line is not valid UTF-8
-
     lock.lines().map(|l| l.unwrap())
 }
 
 fn process_line(line: String, vars: &mut Vec<Variable>) {
-    // Early-stage eval levels:
-    // 1. Just print out the list of tokens
-    // 2. Also print out the AST
-    // 3. Eval the AST with simple VM
-    // 4. Output the codegen
-    // 5. Execute the generated code :) or something
     let p = parser();
 
     // given a header and body, make them pretty! lol

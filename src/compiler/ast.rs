@@ -1,4 +1,3 @@
-#[allow(dead_code)] // FIXME remove l8r
 #[derive(Debug)]
 pub enum Expr<'src> {
     Num(f64),
