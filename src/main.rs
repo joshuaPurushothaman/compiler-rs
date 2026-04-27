@@ -1,11 +1,10 @@
+use clap::Parser as ClapParser;
+use std::{fs, path::PathBuf};
+
 mod compiler;
-use compiler::{
-    eval::{Variable, eval},
-    parser::parser,
-};
+use compiler::{eval::eval, parser::parser};
 
 use std::vec;
-use std::io::{self, BufRead, Write};
 
 use chumsky::Parser;
 
@@ -14,30 +13,22 @@ use simply_colored::*;
 // #[allow(unused_imports)]
 // use ariadne::{Color, Label, Report, ReportKind, sources};
 
+#[derive(ClapParser)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    /// Input source file to compile
+    #[arg(value_name = "FILE")]
+    // src_file: Option<PathBuf>, -- this would be to have REPL functionality
+    src_file: PathBuf,
+}
+
 fn main() {
-    println!("Enter expressions to be evaluated!");
-    print!(">>> ");
-    std::io::stdout().flush().unwrap();
+    let cli = Cli::parse();
 
-    let mut vars = vec![
-        Variable::new("x".to_string(), 3.0),
-        Variable::new("sixseven".to_string(), 67.0),
-    ];
+    let src = fs::read_to_string(cli.src_file).unwrap();
 
-    iter_lines_from_stdin()
-        .map(|line| process_line(line, &mut vars)) // To take in a file, just cat src.syml | cargo run
-        .for_each(drop) // see justfile for more
-}
-
-fn iter_lines_from_stdin() -> impl Iterator<Item = String> {
-    let stdin = io::stdin();
-    let lock = stdin.lock();
-
-    // Panic if any line is not valid UTF-8
-    lock.lines().map(|l| l.unwrap())
-}
-
-fn process_line(line: String, vars: &mut Vec<Variable>) {
+    let mut vars = vec![];
+    let mut funcs = vec![];
     let p = parser();
 
     // given a header and body, make them pretty! lol
@@ -50,15 +41,15 @@ fn process_line(line: String, vars: &mut Vec<Variable>) {
         };
     }
 
-    print_info!("Input: ", line, BLUE, CYAN);
+    print_info!("Input: ", src, BLUE, CYAN);
 
-    let parsed = p.parse(&line);
+    let parsed = p.parse(&src);
 
     match parsed.into_result() {
         Ok(ast) => {
             print_info!("Parses to:\n", ast, YELLOW, WHITE);
 
-            match eval(&ast, vars) {
+            match eval(&ast, &mut vars, &mut funcs) {
                 Ok(output) => print_info!("Evaluates to: ", output, BLUE, GREEN),
                 Err(eval_err) => print_info!("Evaluation error:\n", eval_err, YELLOW, RED),
             }
@@ -67,7 +58,4 @@ fn process_line(line: String, vars: &mut Vec<Variable>) {
             .into_iter()
             .for_each(|e| print_info!("Parse error: \n", e, YELLOW, RED)),
     }
-
-    print!(">>> "); // TODO: move this silly thing somewhere besides the repl lol
-    std::io::stdout().flush().unwrap();
 }

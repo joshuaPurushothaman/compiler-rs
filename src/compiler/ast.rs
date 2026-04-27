@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr<'src> {
     Num(f64),
     Var(&'src str),
@@ -13,10 +13,12 @@ pub enum Expr<'src> {
     Let {
         name: &'src str,
         rhs: Box<Expr<'src>>,
+        then: Box<Expr<'src>>,
     },
     Fn {
         name: &'src str,
         args: Vec<&'src str>,
         body: Box<Expr<'src>>,
+        then: Box<Expr<'src>>,
     },
 }

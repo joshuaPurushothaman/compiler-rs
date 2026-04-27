@@ -6,21 +6,28 @@ use chumsky::{
     prelude::*,
 };
 
-#[allow(clippy::let_and_return)] // for some names + future expansion lol
+#[allow(clippy::let_and_return)]
 pub fn parser<'src>() -> impl Parser<'src, &'src str, Expr<'src>> {
     let ident = text::ascii::ident().padded();
 
     let expr = recursive(|expr| {
-        let int = text::int(10)
-            .map(|s: &str| Expr::Num(s.parse().unwrap()))
-            .padded();
+        let int = text::int(10).map(|s: &str| Expr::Num(s.parse().unwrap()));
 
-        let atom = choice((
-            int,
-            expr.delimited_by(just('('), just(')')),
-            ident.map(Expr::Var),
-        ))
-        .padded();
+        let call = ident
+            .then(
+                expr.clone()
+                    .separated_by(just(','))
+                    .allow_trailing()
+                    .collect::<Vec<_>>()
+                    .delimited_by(just('('), just(')')),
+            )
+            .map(|(f, args)| Expr::Call(f, args));
+
+        let atom = int
+            .or(expr.delimited_by(just('('), just(')')))
+            .or(call)
+            .or(ident.map(Expr::Var))
+            .padded();
 
         let op = |c| just(c).padded();
 
@@ -51,27 +58,35 @@ pub fn parser<'src>() -> impl Parser<'src, &'src str, Expr<'src>> {
         sum
     });
 
-    let decl = text::ascii::keyword("let")
-        .ignore_then(ident)
-        .then_ignore(just('='))
-        .then(expr.clone())
-        .map(|(name, rhs)| Expr::Let {
-            name,
-            rhs: Box::new(rhs),
-        });
+    let decl = recursive(|decl| {
+        let r#let = text::ascii::keyword("let")
+            .ignore_then(ident)
+            .then_ignore(just('='))
+            .then(expr.clone())
+            .then_ignore(just(';'))
+            .then(decl.clone())
+            .map(|((name, rhs), then)| Expr::Let {
+                name,
+                rhs: Box::new(rhs),
+                then: Box::new(then),
+            });
 
-    let function = text::ascii::keyword("fn")
-        .ignore_then(ident)
-        .then(ident.repeated().collect::<Vec<_>>())
-        .then_ignore(just('='))
-        .then(expr.clone())
-        .map(|((name, args), body)| Expr::Fn {
-            name,
-            args,
-            body: Box::new(body),
-        });
+        let r#fn = text::ascii::keyword("fn")
+            .ignore_then(ident)
+            .then(ident.repeated().collect::<Vec<_>>())
+            .then_ignore(just('='))
+            .then(expr.clone())
+            .then_ignore(just(';'))
+            .then(decl)
+            .map(|(((name, args), body), then)| Expr::Fn {
+                name,
+                args,
+                body: Box::new(body),
+                then: Box::new(then),
+            });
 
-    let valid_toplevels = choice((function, decl, expr));
+        r#let.or(r#fn).or(expr).padded()
+    });
 
-    valid_toplevels.padded()
+    decl
 }
